@@ -34,8 +34,11 @@ while true; do
   else
     echo "receipt_handle is '${receipt_handle}'"
     echo "file is '${file}'"
-    ${DOWNLOADER_BIN} ${file}
-    delete_message "${receipt_handle}"
+    if ${DOWNLOADER_BIN} ${file}; then
+      delete_message "${receipt_handle}"
+    else
+      echo "failed to process ${file}"
+    fi
   fi
 
   unset data message_id file
