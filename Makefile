@@ -4,6 +4,7 @@ ACTION := $(shell ./bin/cloudformation_action $(STACK_NAME))
 UPLOAD ?= true
 
 DOWNLOAD_FINDER_KEY = $(shell make -C lambdas/download_finder/src lambda_key)
+BOOTSTRAP_KEY = $(shell make -C bootstrap bootstrap_key)
 
 export AWS_SECRET_ACCESS_KEY
 export AWS_DEFAULT_REGION
@@ -17,6 +18,7 @@ deploy: upload
 	  --template-body "${STACK_TEMPLATE}"                                   \
 	  --parameters                                                          \
 	    ParameterKey=DownloadFinderCodeKey,ParameterValue=${DOWNLOAD_FINDER_KEY} \
+	    ParameterKey=BootstrapKey,ParameterValue=${BOOTSTRAP_KEY} 			\
 	  --capabilities CAPABILITY_IAM                                         \
 	  2>&1
 	@aws cloudformation wait stack-${ACTION}-complete \
@@ -24,5 +26,6 @@ deploy: upload
 
 upload:
 ifeq ($(UPLOAD),true)
+	@make -C bootstrap upload
 	@make -C lambdas/download_finder/src upload
 endif

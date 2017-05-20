@@ -16,8 +16,8 @@ Parameters:
     AllowedValues:
       - t2.nano
       - t2.micro
-  FTPImporterBootstrapKey:
-    Description: The s3 key where the FTPImporter bootstrapper can be found
+  BootstrapKey:
+    Description: The s3 key where the bootstrapper can be found
     Type: String
 
 Mappings:
@@ -253,7 +253,7 @@ Resources:
 
 Outputs:
   BootstrapKey:
-    Value: !Ref FTPImporterBootstrapKey
+    Value: !Ref BootstrapKey
 
   FTPDownloadQueue:
     Value: !Ref FTPDownloadQueue
