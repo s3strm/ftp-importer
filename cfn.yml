@@ -99,6 +99,10 @@ Resources:
                 Effect: Allow
                 Action: "cloudformation:describeStacks"
                 Resource: "*"
+              -
+                Effect: Allow
+                Action: "sqs:*"
+                Resource: "*"
 
   InstanceProfile:
     Type: "AWS::IAM::InstanceProfile"
