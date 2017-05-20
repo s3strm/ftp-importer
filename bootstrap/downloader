@@ -4,15 +4,12 @@ alias ftp_path="echo ${FTP_PATH}/$1"
 alias s3_path="echo incoming/$1"
 alias usage="echo '$0 <file_on_ftp>' >&2"
 
-function log() {
-  message=$@
+function file_exists() {
+  # file exists on the FTP server
 }
 
-function pop_message() {
-  aws sqs receive-message     \
-    --queue-url ${QUEUE_URL}  \
-    --queue 'Messages[].Body' \
-    --output text
+function log() {
+  # publish to cloudwatch logs
 }
 
 function download() {
@@ -37,8 +34,10 @@ function delete() {
 file=$1
 trap "{ rm -f /tmp/${file}; }" EXIT
 
-download ${file} || exit
-upload ${file} || exit
-delete ${file}
+if file_exists; then
+  download ${file} || exit 1
+  upload ${file} || exit 1
+  delete ${file}
+fi
 
-exit
+exit 0

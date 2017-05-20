@@ -16,9 +16,9 @@ Parameters:
     AllowedValues:
       - t2.nano
       - t2.micro
-  #FTPImporterScriptsKey:
-  #  Description: The s3 key where the FTPImporter scripts can be found
-  #  Type: String
+  FTPImporterBootstrapKey:
+    Description: The s3 key where the FTPImporter bootstrapper can be found
+    Type: String
 
 Mappings:
   RegionMap:
@@ -230,14 +230,14 @@ Resources:
                 (
                   cd /opt/bootstrap
                   tar jxvf /tmp/bootstrap.tar.bz2
-                  chmod 755 boostrap.sh
+                  chmod 755 run.sh
                   chmod 755 bin/*
                 )
               path: /usr/local/bin/kickstart
               permissions: '0755'
           runcmd:
               - [ '/usr/local/bin/kickstart' ]
-              - [ '/opt/boostrap/bootstrap.sh' ]
+              - [ '/opt/boostrap/run.sh' ]
 
   FTPImporterASG:
     Type: "AWS::AutoScaling::AutoScalingGroup"
@@ -252,8 +252,8 @@ Resources:
         - !Ref FTPImporterSubnet
 
 Outputs:
-  #FTPImporterScriptsKey:
-  #  Value: !Ref FTPImporterScriptsKey
+  BootstrapKey:
+    Value: !Ref FTPImporterBootstrapKey
 
   FTPDownloadQueue:
     Value: !Ref FTPDownloadQueue
