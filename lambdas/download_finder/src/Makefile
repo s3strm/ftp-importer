@@ -3,7 +3,7 @@ SETTINGS_BUCKET := $(shell aws cloudformation list-exports --query 'Exports[?Nam
 ZIPABLE_FILES = $(shell find . -type f -mindepth 1 ! -iname \*.zip ! -name Makefile ! -name setup.cfg ! -name .gitignore ! -path ./dateutil\* ! -path ./boto\* ! -path ./concurrent\* ! -path ./dateutil ! -path ./docutils\* ! -path ./futures\* ! -path ./jmespath\* ! -path ./python_dateutil\* ! -path ./s3transfer\* ! -path ./six\*)
 
 LAMBDA_MD5 = $(shell cat ${ZIPABLE_FILES} | md5)
-LAMBDA_KEY = lambda/poster/${LAMBDA_MD5}.zip
+LAMBDA_KEY = lambda/download_finder/${LAMBDA_MD5}.zip
 LAMBDA_KEY_EXISTS := $(shell aws s3 ls "s3://${SETTINGS_BUCKET}/${LAMBDA_KEY}" &>/dev/null; echo $$?)
 
 .PHONY: clean upload lambda_key latest.zip
