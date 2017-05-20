@@ -8,6 +8,7 @@ Parameters:
   CheckFrequency:
     Description: The rate which the FTP server is checked for new content
     Type: String
+    Default: "rate(60 minutes)"
   InstanceType:
     Description: The EC2 Instance type
     Type: String
@@ -15,9 +16,9 @@ Parameters:
     AllowedValues:
       - t2.nano
       - t2.micro
-  FTPImporterScriptsKey:
-    Description: The s3 key where the FTPImporter scripts can be found
-    Type: String
+  #FTPImporterScriptsKey:
+  #  Description: The s3 key where the FTPImporter scripts can be found
+  #  Type: String
 
 Mappings:
   RegionMap:
@@ -212,12 +213,12 @@ Resources:
                 AZ=$(curl 169.254.169.254/latest/meta-data/placement/availability-zone/)
                 export AWS_DEFAULT_REGION=${AZ::-1}
 
-                PACKAGE_FILE=$(
-                  aws cloudformation describe-stacks \
-                    --stack-name s3strm-ftp-importer \
-                    --query 'Stacks[].Outputs[?OutputKey == `FTPImporterScriptsKey`].OutputValue' \
-                    --output text
-                )
+                #PACKAGE_FILE=$(
+                #  aws cloudformation describe-stacks \
+                #    --stack-name s3strm-ftp-importer \
+                #    --query 'Stacks[].Outputs[?OutputKey == `FTPImporterScriptsKey`].OutputValue' \
+                #    --output text
+                #)
                 SETTINGS_BUCKET=$(
                   aws cloudformation list-exports \
                     --query 'Exports[?Name==`s3strm-settings-bucket`].Value' \
@@ -250,8 +251,8 @@ Resources:
         - !Ref FTPImporterSubnet
 
 Outputs:
-  FTPImporterScriptsKey:
-    Value: !Ref FTPImporterScriptsKey
+  #FTPImporterScriptsKey:
+  #  Value: !Ref FTPImporterScriptsKey
 
   FTPDownloadQueue:
     Value: !Ref FTPDownloadQueue
