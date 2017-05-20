@@ -1,0 +1,5 @@
+FTP_USERNAME = your_username
+FTP_PASSWORD = your_password
+FTP_HOSTNAME = your.host.com
+FTP_PORT = 21
+FTP_PATH = /path/to/files

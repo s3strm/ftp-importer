@@ -1,0 +1,259 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description : Import videos from an FTP server
+
+Parameters:
+  FTPDownloadFinderCodeKey:
+    Description: The s3 key where the FTPDownloadFinder code can be found
+    Type: String
+  CheckFrequency:
+    Description: The rate which the FTP server is checked for new content
+    Type: String
+  InstanceType:
+    Description: The EC2 Instance type
+    Type: String
+    Default: t2.nano
+    AllowedValues:
+      - t2.nano
+      - t2.micro
+  FTPImporterScriptsKey:
+    Description: The s3 key where the FTPImporter scripts can be found
+    Type: String
+
+Mappings:
+  RegionMap:
+    us-east-1:
+      "64": ami-c58c1dd3
+    us-west-2:
+      "64": ami-4836a428
+    eu-west-1:
+      "64": ami-01ccc867
+    ap-southeast-2:
+      "64": ami-162c2575
+    ap-northeast-1:
+      "64": ami-923d12f5
+
+Resources:
+  FTPDownloadFinder:
+    Type : AWS::Lambda::Function
+    Properties:
+      Code:
+        S3Bucket: !ImportValue s3strm-settings-bucket
+        S3Key: !Ref FTPDownloadFinderCodeKey
+      Description: Populate an SQS queue with files available to download
+      FunctionName: s3strm-ftp-downloadables
+      Handler: lambda.lambda_handler
+      MemorySize: 128
+      Role: !GetAtt Role.Arn
+      Runtime: python2.7
+      Timeout: 30
+    DependsOn: Role
+
+  FTPDownloadFinderInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      Principal: sns.amazonaws.com
+      SourceArn: !Join [ ":", [ "arn:aws:sns", Ref: "AWS::Region", Ref: "AWS::AccountId", "*" ] ]
+      FunctionName: !GetAtt FTPDownloadFinder.Arn
+
+  Role:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version : 2012-10-17
+        Statement:
+          -
+            Effect: Allow
+            Principal:
+              Service:
+                - "lambda.amazonaws.com"
+                - "ec2.amazonaws.com"
+            Action: "sts:AssumeRole"
+      Path: "/"
+      Policies:
+        -
+          PolicyName: "s3strm-ftp-importer"
+          PolicyDocument:
+            Statement:
+              -
+                Effect: "Allow"
+                Action:
+                  - "logs:CreateLogGroup"
+                  - "logs:CreateLogStream"
+                  - "logs:PutLogEvents"
+                Resource: "arn:aws:logs:*:*:*"
+              -
+                Effect: Allow
+                Action: "s3:*"
+                Resource: !Join [ "", [ "arn:aws:s3:::", !ImportValue s3strm-movies-bucket, "/*" ] ]
+              -
+                Effect: Allow
+                Action: "s3:*"
+                Resource: !Join [ "", [ "arn:aws:s3:::", !ImportValue s3strm-settings-bucket, "/*" ] ]
+              -
+                Effect: Allow
+                Action: "cloudformation:ListExports"
+                Resource: "*"
+              -
+                Effect: Allow
+                Action: "cloudformation:describeStacks"
+                Resource: "*"
+
+  InstanceProfile:
+    Type: "AWS::IAM::InstanceProfile"
+    Properties:
+      Roles:
+        - !Ref Role
+
+  FTPDownloadFinderScheduler:
+    Type: "AWS::Events::Rule"
+    Properties:
+      Description: Scheduler to check for new downloadables
+      ScheduleExpression: !Ref CheckFrequency
+      Targets:
+        -
+          Id: 42d01efe-084a-4f69-b9ab-34da54bfe666    # a random uuid
+          Arn: !GetAtt FTPDownloadFinder.Arn
+
+  FTPDownloadQueue:
+    Type: "AWS::SQS::Queue"
+    Properties:
+      # NOTE: Move to FIFO queues when they are rolled out to more regions
+      #ContentBasedDeduplication: true
+      #FifoQueue: true
+      MaximumMessageSize: 1024
+      VisibilityTimeout: 600
+
+  FTPImporterVPC:
+    Type: "AWS::EC2::VPC"
+    Properties:
+      CidrBlock: 172.16.33.0/24
+
+  FTPImporterSubnet:
+    Type: "AWS::EC2::Subnet"
+    Properties:
+      CidrBlock: 172.16.33.0/27
+      VpcId: !Ref FTPImporterVPC
+
+  FTPImporterInternetGatewayAttachment:
+    Type: "AWS::EC2::VPCGatewayAttachment"
+    Properties:
+      InternetGatewayId: !Ref FTPImporterInternetGateway
+      VpcId: !Ref FTPImporterVPC
+
+  FTPImporterInternetGateway:
+    Type: "AWS::EC2::InternetGateway"
+
+  FTPImporterRouteTable:
+    Type: "AWS::EC2::RouteTable"
+    Properties:
+      VpcId: !Ref FTPImporterVPC
+
+  FTPImporterSubnetRouteTable:
+    Type: "AWS::EC2::SubnetRouteTableAssociation"
+    Properties:
+      SubnetId: !Ref FTPImporterSubnet
+      RouteTableId: !Ref FTPImporterRouteTable
+
+  FTPImporterRoute:
+    Type: "AWS::EC2::Route"
+    Properties:
+      DestinationCidrBlock: "0.0.0.0/0"
+      GatewayId: !Ref FTPImporterInternetGateway
+      RouteTableId: !Ref FTPImporterRouteTable
+
+  FTPImporterSecurityGroup:
+    Type: "AWS::EC2::SecurityGroup"
+    Properties:
+      GroupDescription: Group for the FTPImporter EC2 Instance
+      SecurityGroupEgress:
+        -
+          CidrIp: "0.0.0.0/0"
+          FromPort: 1
+          IpProtocol: tcp
+          ToPort: 65535
+        -
+          CidrIp: "0.0.0.0/0"
+          FromPort: 1
+          IpProtocol: udp
+          ToPort: 65535
+        -
+          CidrIp: "0.0.0.0/0"
+          FromPort: -1
+          IpProtocol: icmp
+          ToPort: -1
+      SecurityGroupIngress:
+        -
+          CidrIp: "0.0.0.0/0"
+          FromPort: 22
+          IpProtocol: tcp
+          ToPort: 22
+      VpcId: !Ref FTPImporterVPC
+
+  FTPImporterLaunchConfiguration:
+    Type: "AWS::AutoScaling::LaunchConfiguration"
+    Properties:
+      AssociatePublicIpAddress: true
+      IamInstanceProfile: !Ref InstanceProfile
+      ImageId: !FindInMap [ RegionMap, !Ref "AWS::Region", "64" ]
+      KeyName: s3strm
+      SecurityGroups:
+        - !Ref FTPImporterSecurityGroup
+      InstanceMonitoring: false
+      InstanceType: !Ref InstanceType
+      UserData:
+        "Fn::Base64": |
+          #cloud-config
+          packages:
+            - wget
+          write_files:
+            - content: |
+                #!/bin/bash
+                AZ=$(curl 169.254.169.254/latest/meta-data/placement/availability-zone/)
+                export AWS_DEFAULT_REGION=${AZ::-1}
+
+                PACKAGE_FILE=$(
+                  aws cloudformation describe-stacks \
+                    --stack-name s3strm-ftp-importer \
+                    --query 'Stacks[].Outputs[?OutputKey == `FTPImporterScriptsKey`].OutputValue' \
+                    --output text
+                )
+                SETTINGS_BUCKET=$(
+                  aws cloudformation list-exports \
+                    --query 'Exports[?Name==`s3strm-settings-bucket`].Value' \
+                    --output text
+                )
+
+                rm -Rf /opt/ftp_importer
+                aws s3 cp s3://${SETTINGS_BUCKET}${PACKAGE_FILE} /opt/ftp_importer/package.tar.bz2
+                mkdir -p /opt/ftp_importer
+                (
+                  cd /opt/ftp_importer
+                  tar jxvf package.tar.bz2
+                  chmod 755 bin/*
+                )
+              path: /usr/local/bin/bootstrap_ftp_importer
+              permissions: '0755'
+          runcmd:
+              - [ '/usr/local/bin/boostrap_ftp_importer' ]
+
+  FTPImporterASG:
+    Type: "AWS::AutoScaling::AutoScalingGroup"
+    Properties:
+      DesiredCapacity: 1
+      LaunchConfigurationName: !Ref FTPImporterLaunchConfiguration
+      MaxSize: 4
+      MinSize: 0
+      TerminationPolicies:
+        - ClosestToNextInstanceHour
+      VPCZoneIdentifier:
+        - !Ref FTPImporterSubnet
+
+Outputs:
+  FTPImporterScriptsKey:
+    Value: !Ref FTPImporterScriptsKey
+
+  FTPDownloadQueue:
+    Value: !Ref FTPDownloadQueue
+    Export:
+      Name: s3strm-ftp-download-queue
