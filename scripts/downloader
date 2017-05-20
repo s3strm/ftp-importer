@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+shopt -s expand_aliases
+alias ftp_path="echo ${FTP_PATH}/$1"
+alias s3_path="echo incoming/$1"
+alias usage="echo '$0 <file_on_ftp>' >&2"
+
+function log() {
+  message=$@
+}
+
+function pop_message() {
+  aws sqs receive-message     \
+    --queue-url ${QUEUE_URL}  \
+    --queue 'Messages[].Body' \
+    --output text
+}
+
+function download() {
+  file=$1
+  log "Downloading ${file} from FTP"
+}
+
+function upload() {
+  file=$1
+  log "Uploading ${file} to S3"
+}
+
+function delete() {
+  file=$1
+  log "Deleting ${file} from FTP"
+}
+
+###############################################################################
+
+[[ $# -ne 1 ]] && usage && exit 1
+
+file=$1
+trap "{ rm -f /tmp/${file}; }" EXIT
+
+download ${file} || exit
+upload ${file} || exit
+delete ${file}
+
+exit
