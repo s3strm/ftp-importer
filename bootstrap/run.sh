@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+AZ=$(curl 169.254.169.254/latest/meta-data/placement/availability-zone/)
+export AWS_DEFAULT_REGION=${AZ::-1}
 QUEUE_URL=$(
   aws cloudformation describe-stacks \
     --stack-name s3strm-ftp-importer \
