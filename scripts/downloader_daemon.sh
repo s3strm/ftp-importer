@@ -1,10 +1,39 @@
 #!/usr/bin/env bash
-QUEUE_URL=TODO
+if [[ -z ${QUEUE_URL} ]]; then
+  echo "Environment variable QUEUE_URL is unset" >&2
+  exit 1
+fi
+
 DOWNLOADER_BIN="$(dirname $0)/downloader"
 
+function pop_message() {
+  aws sqs receive-message                                             \
+    --queue-url ${QUEUE_URL}                                          \
+    --query 'Messages[].{receipt_handle: ReceiptHandle, video: Body}' \
+    --output text
+}
+
+function delete_message() {
+  handle="$1"
+  aws sqs delete-message          \
+    --queue-url ${QUEUE_URL}      \
+    --receipt-handle "${handle}"
+}
+
 while true; do
-  file=$(pop_message)
-  [[ -z ${file} ]] || ${DOWNLOADER_BIN} ${file}
-  unset file
-  sleep 120     # use long-polling so that sleeping isn't needed
+  data="$(pop_message)"
+  receipt_handle="$(echo "${data}" | awk '{ print $1}')"
+  file="$(echo "${data}" | awk '{ print $2}')"
+
+  if [[ "${receipt_handle}" == "None" ]]; then
+    echo "no messages available on queue"
+    sleep 120
+  else
+    echo "receipt_handle is '${receipt_handle}'"
+    echo "file is '${file}'"
+    ${DOWNLOADER_BIN} ${file}
+    delete_message "${receipt_handle}"
+  fi
+
+  unset data message_id file
 done
