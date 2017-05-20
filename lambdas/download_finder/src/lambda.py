@@ -27,8 +27,12 @@ def add_to_queue(file):
 
 def lambda_handler(event, context):
     for file in downloadable_files():
-        print("queuing {} for import".format(file))
-        add_to_queue(file)
+        file_path = "{}/{}".format(
+            re.sub("\/$", "", os.environ["FTP_PATH"]),
+            file,
+        )
+        print("Queuing {} for import".format(file_path))
+        add_to_queue(file_path)
 
 if __name__ == "__main__":
     print(lambda_handler({}, {}))
