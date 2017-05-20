@@ -41,7 +41,7 @@ Resources:
         S3Bucket: !ImportValue s3strm-settings-bucket
         S3Key: !Ref DownloadFinderCodeKey
       Description: Populate an SQS queue with files available to download
-      FunctionName: s3strm-ftp-downloadables
+      FunctionName: s3strm-download-finder
       Handler: lambda.lambda_handler
       MemorySize: 128
       Role: !GetAtt Role.Arn
