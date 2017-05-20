@@ -2,8 +2,8 @@ AWSTemplateFormatVersion: 2010-09-09
 Description : Import videos from an FTP server
 
 Parameters:
-  FTPDownloadFinderCodeKey:
-    Description: The s3 key where the FTPDownloadFinder code can be found
+  DownloadFinderCodeKey:
+    Description: The s3 key where the DownloadFinder code can be found
     Type: String
   CheckFrequency:
     Description: The rate which the FTP server is checked for new content
@@ -33,12 +33,12 @@ Mappings:
       "64": ami-923d12f5
 
 Resources:
-  FTPDownloadFinder:
+  DownloadFinder:
     Type : AWS::Lambda::Function
     Properties:
       Code:
         S3Bucket: !ImportValue s3strm-settings-bucket
-        S3Key: !Ref FTPDownloadFinderCodeKey
+        S3Key: !Ref DownloadFinderCodeKey
       Description: Populate an SQS queue with files available to download
       FunctionName: s3strm-ftp-downloadables
       Handler: lambda.lambda_handler
@@ -48,13 +48,13 @@ Resources:
       Timeout: 30
     DependsOn: Role
 
-  FTPDownloadFinderInvokePermission:
+  DownloadFinderInvokePermission:
     Type: AWS::Lambda::Permission
     Properties:
       Action: lambda:InvokeFunction
       Principal: sns.amazonaws.com
       SourceArn: !Join [ ":", [ "arn:aws:sns", Ref: "AWS::Region", Ref: "AWS::AccountId", "*" ] ]
-      FunctionName: !GetAtt FTPDownloadFinder.Arn
+      FunctionName: !GetAtt DownloadFinder.Arn
 
   Role:
     Type: AWS::IAM::Role
@@ -105,7 +105,7 @@ Resources:
       Roles:
         - !Ref Role
 
-  FTPDownloadFinderScheduler:
+  DownloadFinderScheduler:
     Type: "AWS::Events::Rule"
     Properties:
       Description: Scheduler to check for new downloadables
@@ -113,7 +113,7 @@ Resources:
       Targets:
         -
           Id: 42d01efe-084a-4f69-b9ab-34da54bfe666    # a random uuid
-          Arn: !GetAtt FTPDownloadFinder.Arn
+          Arn: !GetAtt DownloadFinder.Arn
 
   FTPDownloadQueue:
     Type: "AWS::SQS::Queue"
