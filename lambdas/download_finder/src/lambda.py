@@ -25,7 +25,6 @@ def add_to_queue(file):
         MessageBody=file,
     )
 
-
 def lambda_handler(event, context):
     for file in downloadable_files():
         print("queuing {} for import".format(file))
