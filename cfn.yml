@@ -213,30 +213,31 @@ Resources:
                 AZ=$(curl 169.254.169.254/latest/meta-data/placement/availability-zone/)
                 export AWS_DEFAULT_REGION=${AZ::-1}
 
-                #PACKAGE_FILE=$(
-                #  aws cloudformation describe-stacks \
-                #    --stack-name s3strm-ftp-importer \
-                #    --query 'Stacks[].Outputs[?OutputKey == `FTPImporterScriptsKey`].OutputValue' \
-                #    --output text
-                #)
+                BOOTSTRAP_FILE=$(
+                  aws cloudformation describe-stacks \
+                    --stack-name s3strm-ftp-importer \
+                    --query 'Stacks[].Outputs[?OutputKey == `BootstrapKey`].OutputValue' \
+                    --output text
+                )
                 SETTINGS_BUCKET=$(
                   aws cloudformation list-exports \
                     --query 'Exports[?Name==`s3strm-settings-bucket`].Value' \
                     --output text
                 )
 
-                rm -Rf /opt/ftp_importer
-                aws s3 cp s3://${SETTINGS_BUCKET}${PACKAGE_FILE} /opt/ftp_importer/package.tar.bz2
-                mkdir -p /opt/ftp_importer
+                aws s3 cp s3://${SETTINGS_BUCKET}${PACKAGE_FILE} /tmp/bootstrap.tar.bz2
+                mkdir -p /opt/bootstrap
                 (
-                  cd /opt/ftp_importer
-                  tar jxvf package.tar.bz2
+                  cd /opt/bootstrap
+                  tar jxvf /tmp/bootstrap.tar.bz2
+                  chmod 755 boostrap.sh
                   chmod 755 bin/*
                 )
-              path: /usr/local/bin/bootstrap_ftp_importer
+              path: /usr/local/bin/kickstart
               permissions: '0755'
           runcmd:
-              - [ '/usr/local/bin/boostrap_ftp_importer' ]
+              - [ '/usr/local/bin/kickstart' ]
+              - [ '/opt/boostrap/bootstrap.sh' ]
 
   FTPImporterASG:
     Type: "AWS::AutoScaling::AutoScalingGroup"
