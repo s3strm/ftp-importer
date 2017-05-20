@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
-if [[ -z ${QUEUE_URL} ]]; then
-  echo "Environment variable QUEUE_URL is unset" >&2
-  exit 1
-fi
-
+QUEUE_URL=$(
+  aws cloudformation describe-stacks \
+    --stack-name s3strm-ftp-importer \
+    --query 'Stacks[].Outputs[?OutputKey==`FTPDownloadQueue`].OutputValue' \
+    --output text
+)
 DOWNLOADER_BIN="$(dirname $0)/downloader"
 
 function pop_message() {
