@@ -19,6 +19,18 @@ Parameters:
   BootstrapKey:
     Description: The s3 key where the bootstrapper can be found
     Type: String
+  FtpHostname:
+    Description: The hostname of the FTP server
+    Type: String
+  FtpUsername:
+    Description: The username for the FTP server
+    Type: String
+  FtpPassword:
+    Description: The password for the FTP server
+    Type: String
+  FtpPath:
+    Description: The path on the FTP server to search for files
+    Type: String
 
 Mappings:
   RegionMap:
@@ -40,6 +52,13 @@ Resources:
       Code:
         S3Bucket: !ImportValue s3strm-settings-bucket
         S3Key: !Ref DownloadFinderCodeKey
+      Environment:
+        Variables:
+          FTP_HOSTNAME: !Ref FtpHostname
+          FTP_USERNAME: !Ref FtpUsername
+          FTP_PASSWORD: !Ref FtpPassword
+          FTP_PATH: !Ref FtpPath
+          QUEUE_URL: !Ref FTPDownloadQueue
       Description: Populate an SQS queue with files available to download
       FunctionName: s3strm-download-finder
       Handler: lambda.lambda_handler

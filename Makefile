@@ -6,6 +6,8 @@ UPLOAD ?= true
 DOWNLOAD_FINDER_KEY = $(shell make -C lambdas/download_finder/src lambda_key)
 BOOTSTRAP_KEY = $(shell make -C bootstrap bootstrap_key)
 
+include ./settings
+
 export AWS_SECRET_ACCESS_KEY
 export AWS_DEFAULT_REGION
 export AWS_ACCESS_KEY_ID
@@ -19,6 +21,10 @@ deploy: upload
 	  --parameters                                                          \
 	    ParameterKey=DownloadFinderCodeKey,ParameterValue=${DOWNLOAD_FINDER_KEY} \
 	    ParameterKey=BootstrapKey,ParameterValue=${BOOTSTRAP_KEY} 			\
+	    ParameterKey=FtpUsername,ParameterValue=${FTP_USERNAME} 			\
+	    ParameterKey=FtpPassword,ParameterValue=${FTP_PASSWORD} 			\
+	    ParameterKey=FtpHostname,ParameterValue=${FTP_HOSTNAME} 			\
+	    ParameterKey=FtpPath,ParameterValue=${FTP_PATH} 					\
 	  --capabilities CAPABILITY_IAM                                         \
 	  2>&1
 	@aws cloudformation wait stack-${ACTION}-complete \
