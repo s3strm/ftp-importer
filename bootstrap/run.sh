@@ -54,9 +54,9 @@ export LOG_GROUP=$(
 
 export INSTANCE_ID=$(curl 169.254.169.254/latest/meta-data/instance-id)
 
-aws logs create-log-stream \
-  --log-stream-name ${INSTANCE_ID} \
-  --log-group-name ${LOG_GROUP}
+#aws logs create-log-stream \
+#  --log-stream-name ${INSTANCE_ID} \
+#  --log-group-name ${LOG_GROUP}
 
 function pop_message() {
   aws sqs receive-message                                             \
