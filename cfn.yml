@@ -8,7 +8,7 @@ Parameters:
   CheckFrequency:
     Description: The rate which the FTP server is checked for new content
     Type: String
-    Default: "rate(60 minutes)"
+    Default: "rate(10 minutes)"
   InstanceType:
     Description: The EC2 Instance type
     Type: String
@@ -275,14 +275,80 @@ Resources:
   FTPImporterASG:
     Type: "AWS::AutoScaling::AutoScalingGroup"
     Properties:
-      DesiredCapacity: 1
+      DesiredCapacity: 0
       LaunchConfigurationName: !Ref FTPImporterLaunchConfiguration
-      MaxSize: 4
+      MaxSize: 1
       MinSize: 0
       TerminationPolicies:
         - ClosestToNextInstanceHour
       VPCZoneIdentifier:
         - !Ref FTPImporterSubnet
+
+  FTPImporterASGScaleUpPolicy:
+    Type: "AWS::AutoScaling::ScalingPolicy"
+    Properties:
+      AdjustmentType: ExactCapacity
+      AutoScalingGroupName: !Ref FTPImporterASG
+      Cooldown: 3600
+      PolicyType: SimpleScaling
+      ScalingAdjustment: 1
+
+  FTPImporterASGScaleDownPolicy:
+    Type: "AWS::AutoScaling::ScalingPolicy"
+    Properties:
+      AdjustmentType: ExactCapacity
+      AutoScalingGroupName: !Ref FTPImporterASG
+      Cooldown: 300
+      PolicyType: SimpleScaling
+      ScalingAdjustment: 0
+
+  FTPImporterASGScaleUpAlarm:
+    Type: "AWS::CloudWatch::Alarm"
+    Properties:
+      ActionsEnabled: true
+      AlarmActions:
+        - !Ref FTPImporterASGScaleUpPolicy
+      AlarmDescription: Scale up the importers to process the queue
+      AlarmName: "FTPImporterQueuedDownloads"
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        -
+          Name: QueueName
+          Value: !Ref FTPDownloadQueue
+      EvaluationPeriods: 1
+      MetricName: ApproximateNumberOfMessagesVisible
+      Namespace: AWS/SQL
+      Period: 300
+      Statistic: Minimum
+      Threshold: 0
+      Unit: Count
+
+  FTPImporterASGScaleDownAlarm:
+    Type: "AWS::CloudWatch::Alarm"
+    Properties:
+      ActionsEnabled: true
+      AlarmActions:
+        - !Ref FTPImporterASGScaleDownPolicy
+      AlarmDescription: Scale down the importers to save money
+      AlarmName: "FTPImporterQueuedDownloadsProcessed"
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        -
+          Name: QueueName
+          Value: !Ref FTPDownloadQueue
+      EvaluationPeriods: 12
+      MetricName: NumberOfMessagesDeleted
+      Namespace: AWS/SQL
+      Period: 300
+      Statistic: Sum
+      Threshold: 0
+      Unit: Count
+
+  FTPImporterLogGroup:
+    Type: "AWS::Logs::LogGroup"
+    Properties:
+      LogGroupName: "s3strm-ftp-importer"
+      RetentionInDays: 7
 
 Outputs:
   BootstrapKey:
