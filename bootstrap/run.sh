@@ -43,6 +43,13 @@ export FTP_PATH=$(
     --output text
 )
 
+export LOG_GROUP=$(
+  aws cloudformation describe-stacks \
+    --stack-name s3strm-ftp-importer \
+    --query 'Stacks[].Outputs[?OutputKey==`LogGroup`].OutputValue' \
+    --output text
+)
+
 function pop_message() {
   aws sqs receive-message                                             \
     --queue-url ${QUEUE_URL}                                          \

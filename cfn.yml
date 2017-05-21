@@ -370,3 +370,6 @@ Outputs:
 
   FtpPath:
     Value: !Ref FtpPath
+
+  LogGroup:
+    Value: !Ref FTPImporterLogGroup

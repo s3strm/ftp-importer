@@ -12,13 +12,16 @@ function file_exists() {
   return $?
 }
 
-#function log() {
-#  # publish to cloudwatch logs
-#}
+function log() {
+  aws logs put-log-events \
+    --log-group-name ${LOG_GROUP} \
+    --log-stream-name $(date -u +%Y%m%d) \
+    --log-events "$@"
+}
 
 function download() {
   file=$1
-  #log "Downloading ${file} from FTP"
+  log "Downloading ${file} from FTP"
   wget \
     ftp://${FTP_USERNAME}:${FTP_PASSWORD}@${FTP_HOSTNAME}${FTP_PATH}${file} \
     -O /tmp/${file}
@@ -26,13 +29,22 @@ function download() {
 
 function upload() {
   file=$1
-  #log "Uploading ${file} to S3"
+  log "Uploading ${file} to S3"
   aws s3 cp /tmp/${file} s3://${MOVIES_BUCKET}/incoming/${file}
 }
 
 function delete() {
   file=$1
-  #log "Deleting ${file} from FTP"
+  log "Deleting ${file} from FTP"
+  lftp \
+    ftp://${FTP_USERNAME}:${FTP_PASSWORD}@${FTP_HOSTNAME}${FTP_PATH}${file} \
+     -e "rm ${file}; exit"
+}
+
+function cleanup() {
+  file=$1
+  log "Deleting ${file} from FTP"
+  rm -f /tmp/${file}
 }
 
 ###############################################################################
@@ -40,7 +52,7 @@ function delete() {
 [[ $# -ne 1 ]] && usage && exit 1
 
 file=$1
-trap "{ rm -f /tmp/${file}; }" EXIT
+trap "{ cleanup ${file}; }" EXIT
 
 if file_exists ${file}; then
   download ${file} || exit 1
