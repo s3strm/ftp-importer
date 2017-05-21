@@ -15,8 +15,15 @@ function file_exists() {
 function log() {
   aws logs put-log-events \
     --log-group-name ${LOG_GROUP} \
-    --log-stream-name $(date -u +%Y%m%d) \
-    --log-events "$@"
+    --log-stream-name ${INSTANCE_ID} \
+    --log-events "
+      [
+        {
+          \"timestamp\": $(date +%s%N | cut -b1-13),
+          \"message\": \"$@\"
+        }
+    ]
+  "
 }
 
 function download() {

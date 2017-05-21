@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 AZ=$(curl 169.254.169.254/latest/meta-data/placement/availability-zone/)
 export AWS_DEFAULT_REGION=${AZ::-1}
+export INSTANCE_ID
+
 export MOVIES_BUCKET=$(
   aws cloudformation list-exports \
     --query 'Exports[?Name==`s3strm-movies-bucket`].Value' \
@@ -49,6 +51,12 @@ export LOG_GROUP=$(
     --query 'Stacks[].Outputs[?OutputKey==`LogGroup`].OutputValue' \
     --output text
 )
+
+export INSTANCE_ID=$(curl 169.254.169.254/latest/meta-data/instance-id)
+
+aws logs create-log-stream \
+  --log-stream-name ${INSTANCE_ID} \
+  --log-group-name ${LOG_GROUP}
 
 function pop_message() {
   aws sqs receive-message                                             \

@@ -314,11 +314,11 @@ Resources:
       Dimensions:
         -
           Name: QueueName
-          Value: !Ref FTPDownloadQueue
+          Value: !GetAtt FTPDownloadQueue.QueueName
       EvaluationPeriods: 1
       MetricName: ApproximateNumberOfMessagesVisible
-      Namespace: AWS/SQL
-      Period: 300
+      Namespace: AWS/SQS
+      Period: 60
       Statistic: Minimum
       Threshold: 0
       Unit: Count
@@ -335,10 +335,10 @@ Resources:
       Dimensions:
         -
           Name: QueueName
-          Value: !Ref FTPDownloadQueue
+          Value: !GetAtt FTPDownloadQueue.QueueName
       EvaluationPeriods: 12
       MetricName: NumberOfMessagesDeleted
-      Namespace: AWS/SQL
+      Namespace: AWS/SQS
       Period: 300
       Statistic: Sum
       Threshold: 0
