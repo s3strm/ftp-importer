@@ -240,6 +240,7 @@ Resources:
           #cloud-config
           packages:
             - wget
+            - lftp
           write_files:
             - content: |
                 #!/bin/bash

@@ -13,9 +13,17 @@ function file_exists() {
 }
 
 function log() {
+  sequence_token=$(
+    aws logs describe-log-streams \
+      --log-group-name ${LOG_GROUP} \
+      --query 'logStreams[].uploadSequenceToken' \
+      --output text
+  )
+
   aws logs put-log-events \
     --log-group-name ${LOG_GROUP} \
     --log-stream-name ${INSTANCE_ID} \
+    $( [[ ! -z ${sequence_token} ]] && echo "--sequence-token ${sequence_token}" ) \
     --log-events "
       [
         {
