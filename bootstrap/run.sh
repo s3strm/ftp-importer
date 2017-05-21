@@ -74,8 +74,8 @@ function delete_message() {
 
 while true; do
   data="$(pop_message)"
-  receipt_handle="$(echo "${data}" | awk '{ print $1}')"
-  file="$(echo "${data}" | awk '{ print $2}')"
+  receipt_handle="$(echo "${data}" | awk '{ print $1 }')"
+  file="$(echo "${data}" | awk '{ print $2 }')"
 
   if [[ "${receipt_handle}" == "None" ]]; then
     echo "no messages available on queue"
