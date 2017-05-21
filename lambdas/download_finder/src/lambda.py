@@ -13,8 +13,13 @@ def downloadable_files():
             )
 
     ftp.cwd(os.environ["FTP_PATH"])
-    files = ftp.nlst("tt???????.???")
-    ftp.close
+
+    try:
+        files = ftp.nlst("tt???????.???")
+        ftp.close
+    except:
+        return []
+
     return files
 
 def add_to_queue(file):
