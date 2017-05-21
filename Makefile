@@ -15,7 +15,7 @@ export AWS_ACCESS_KEY_ID
 .PHONY = deploy upload docker_image test
 
 deploy: upload
-	aws cloudformation ${ACTION}-stack                                      \
+	@aws cloudformation ${ACTION}-stack                                     \
 	  --stack-name "${STACK_NAME}"                                          \
 	  --template-body "${STACK_TEMPLATE}"                                   \
 	  --parameters                                                          \

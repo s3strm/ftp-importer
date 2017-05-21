@@ -8,7 +8,7 @@ Parameters:
   CheckFrequency:
     Description: The rate which the FTP server is checked for new content
     Type: String
-    Default: "rate(1 minute)"
+    Default: "rate(60 minutes)"
   InstanceType:
     Description: The EC2 Instance type
     Type: String
@@ -68,12 +68,20 @@ Resources:
       Timeout: 30
     DependsOn: Role
 
-  DownloadFinderInvokePermission:
+  DownloadFinderInvokePermissionLambda:
     Type: AWS::Lambda::Permission
     Properties:
       Action: lambda:InvokeFunction
       Principal: sns.amazonaws.com
       SourceArn: !Join [ ":", [ "arn:aws:sns", Ref: "AWS::Region", Ref: "AWS::AccountId", "*" ] ]
+      FunctionName: !GetAtt DownloadFinder.Arn
+
+  DownloadFinderInvokePermissionEvents:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt DownloadFinderScheduler.Arn
       FunctionName: !GetAtt DownloadFinder.Arn
 
   Role:
@@ -88,6 +96,7 @@ Resources:
               Service:
                 - "lambda.amazonaws.com"
                 - "ec2.amazonaws.com"
+                - "events.amazonaws.com"
             Action: "sts:AssumeRole"
       Path: "/"
       Policies:
