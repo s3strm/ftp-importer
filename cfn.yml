@@ -8,7 +8,7 @@ Parameters:
   CheckFrequency:
     Description: The rate which the FTP server is checked for new content
     Type: String
-    Default: "rate(60 minutes)"
+    Default: "rate(1 minute)"
   InstanceType:
     Description: The EC2 Instance type
     Type: String
@@ -134,9 +134,10 @@ Resources:
     Properties:
       Description: Scheduler to check for new downloadables
       ScheduleExpression: !Ref CheckFrequency
+      State: ENABLED
       Targets:
         -
-          Id: 42d01efe-084a-4f69-b9ab-34da54bfe666    # a random uuid
+          Id: "s3strm-download-finder"
           Arn: !GetAtt DownloadFinder.Arn
 
   FTPDownloadQueue:
@@ -282,3 +283,15 @@ Outputs:
     Value: !Ref FTPDownloadQueue
     Export:
       Name: s3strm-ftp-download-queue
+
+  FtpHostname:
+    Value: !Ref FtpHostname
+
+  FtpUsername:
+    Value: !Ref FtpUsername
+
+  FtpPassword:
+    Value: !Ref FtpPassword
+
+  FtpPath:
+    Value: !Ref FtpPath

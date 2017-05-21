@@ -1,6 +1,12 @@
 #!/usr/bin/env bash
 AZ=$(curl 169.254.169.254/latest/meta-data/placement/availability-zone/)
 export AWS_DEFAULT_REGION=${AZ::-1}
+export MOVIES_BUCKET=$(
+  aws cloudformation list-exports \
+    --query 'Exports[?Name==`s3strm-movies-bucket`].Value' \
+    --output text
+)
+
 QUEUE_URL=$(
   aws cloudformation describe-stacks \
     --stack-name s3strm-ftp-importer \
@@ -8,6 +14,34 @@ QUEUE_URL=$(
     --output text
 )
 DOWNLOADER_BIN="$(dirname $0)/downloader"
+
+export FTP_USERNAME=$(
+  aws cloudformation describe-stacks \
+    --stack-name s3strm-ftp-importer \
+    --query 'Stacks[].Outputs[?OutputKey==`FtpUsername`].OutputValue' \
+    --output text
+)
+
+export FTP_PASSWORD=$(
+  aws cloudformation describe-stacks \
+    --stack-name s3strm-ftp-importer \
+    --query 'Stacks[].Outputs[?OutputKey==`FtpPassword`].OutputValue' \
+    --output text
+)
+
+export FTP_HOSTNAME=$(
+  aws cloudformation describe-stacks \
+    --stack-name s3strm-ftp-importer \
+    --query 'Stacks[].Outputs[?OutputKey==`FtpHostname`].OutputValue' \
+    --output text
+)
+
+export FTP_PATH=$(
+  aws cloudformation describe-stacks \
+    --stack-name s3strm-ftp-importer \
+    --query 'Stacks[].Outputs[?OutputKey==`FtpPath`].OutputValue' \
+    --output text
+)
 
 function pop_message() {
   aws sqs receive-message                                             \
