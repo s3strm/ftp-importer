@@ -156,7 +156,7 @@ Resources:
       #ContentBasedDeduplication: true
       #FifoQueue: true
       MaximumMessageSize: 1024
-      VisibilityTimeout: 600
+      VisibilityTimeout: 1800   # 30 minutes
 
   FTPImporterVPC:
     Type: "AWS::EC2::VPC"
