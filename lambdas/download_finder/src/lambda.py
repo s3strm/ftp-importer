@@ -20,6 +20,7 @@ def downloadable_files():
 def add_to_queue(file):
     client = boto3.client('sqs')
 
+    print("queuing {} for download".format(file))
     response = client.send_message(
         QueueUrl=os.environ["QUEUE_URL"],
         MessageBody=file,
