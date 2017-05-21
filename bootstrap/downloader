@@ -53,13 +53,13 @@ function delete() {
   file=$1
   log "Deleting ${file} from FTP"
   lftp \
-    ftp://${FTP_USERNAME}:${FTP_PASSWORD}@${FTP_HOSTNAME}${FTP_PATH}${file} \
+    ftp://${FTP_USERNAME}:${FTP_PASSWORD}@${FTP_HOSTNAME}${FTP_PATH} \
      -e "rm ${file}; exit"
 }
 
 function cleanup() {
   file=$1
-  log "Deleting ${file} from FTP"
+  log "Deleting /tmp/${file}"
   rm -f /tmp/${file}
 }
 
