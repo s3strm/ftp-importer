@@ -329,7 +329,7 @@ Resources:
     Type: "AWS::CloudWatch::Alarm"
     Properties:
       ActionsEnabled: true
-      AlarmActions:
+      InsufficientDataActions:
         - !Ref FTPImporterASGScaleDownPolicy
       AlarmDescription: Scale down the importers to save money
       AlarmName: "FTPImporterQueuedDownloadsProcessed"
