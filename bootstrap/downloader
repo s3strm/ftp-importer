@@ -1,79 +1,34 @@
 #!/usr/bin/env bash
-shopt -s expand_aliases
-alias ftp_path="echo ${FTP_PATH}/$1"
-alias s3_path="echo incoming/$1"
-alias usage="echo '$0 <file_on_ftp>' >&2"
+FILE=$1
+FTP_URL="ftp://${FTP_USERNAME}:${FTP_PASSWORD}@${FTP_HOSTNAME}${FTP_PATH}${FILE}"
+S3_URL="s3://${MOVIES_BUCKET}/incoming/${FILE}"
 
 function file_exists() {
-  # file exists on the FTP server
-  file=$1
   curl ftp://${FTP_USERNAME}:${FTP_PASSWORD}@${FTP_HOSTNAME}${FTP_PATH} 2> /dev/null \
-    | grep "${file}" &> /dev/null
+    | grep "${FILE}" &> /dev/null
   return $?
 }
 
 function log() {
-  #sequence_token=$(
-  #  aws logs describe-log-streams \
-  #    --log-group-name ${LOG_GROUP} \
-  #    --query 'logStreams[].uploadSequenceToken' \
-  #    --output text
-  #)
-
-  #aws logs put-log-events \
-  #  --log-group-name ${LOG_GROUP} \
-  #  --log-stream-name ${INSTANCE_ID} \
-  #  $( [[ ! -z ${sequence_token} ]] && echo "--sequence-token ${sequence_token}" ) \
-  #  --log-events "
-  #    [
-  #      {
-  #        \"timestamp\": $(date +%s%N | cut -b1-13),
-  #        \"message\": \"$@\"
-  #      }
-  #  ]
-  #"
   echo "$@"
 }
 
-function download() {
-  file=$1
-  log "Downloading ${file} from FTP"
-  wget \
-    ftp://${FTP_USERNAME}:${FTP_PASSWORD}@${FTP_HOSTNAME}${FTP_PATH}${file} \
-    -O /tmp/${file}
-}
-
-function upload() {
-  file=$1
-  log "Uploading ${file} to S3"
-  aws s3 cp /tmp/${file} s3://${MOVIES_BUCKET}/incoming/${file}
+function migrate_to_s3() {
+  wget ${FTP_URL} -O - | aws s3 cp - ${S3_URL}
 }
 
 function delete() {
   file=$1
-  log "Deleting ${file} from FTP"
-  lftp \
-    ftp://${FTP_USERNAME}:${FTP_PASSWORD}@${FTP_HOSTNAME}${FTP_PATH} \
-     -e "rm ${file}; exit"
-}
-
-function cleanup() {
-  file=$1
-  log "Deleting /tmp/${file}"
-  rm -f /tmp/${file}
+  log "Deleting ${FILE} from FTP"
+  lftp ftp://${FTP_USERNAME}:${FTP_PASSWORD}@${FTP_HOSTNAME}${FTP_PATH} \
+     -e "rm ${FILE}; exit"
 }
 
 ###############################################################################
 
-[[ $# -ne 1 ]] && usage && exit 1
-
-file=$1
-trap "{ cleanup ${file}; }" EXIT
-
-if file_exists ${file}; then
-  download ${file} || exit 1
-  upload ${file} || exit 1
-  delete ${file}
+if file_exists; then
+  migrate_to_s3 || exit 1
+  delete
 fi
 
 exit 0
