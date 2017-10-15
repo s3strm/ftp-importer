@@ -1,0 +1,37 @@
+#!/bin/bash
+function log() {
+  echo "$@"
+}
+
+function migrate_to_s3() {
+  log "Migrating $1 from FTP to S3"
+  wget "$1" -O - | aws s3 cp - "$2"
+  return $?
+}
+
+function delete() {
+  file=$1
+  log "Deleting ${file} from FTP"
+  lftp ftp://${FTP_USERNAME}:${FTP_PASSWORD}@${FTP_HOSTNAME}${FTP_PATH} \
+     -e "rm "${file}"; exit"
+}
+
+function ftp_files() {
+  lftp ${FTP_URL} -e 'cls -1; exit'
+}
+
+###############################################################################
+
+IMDB_ID=$1
+FTP_PATH="/files/complete/tv/${IMDB_ID}"
+FTP_URL="ftp://${FTP_USERNAME}:${FTP_PASSWORD}@${FTP_HOSTNAME}${FTP_PATH}"
+S3_URL="s3://${MOVIES_BUCKET}/incoming"
+
+export IFS=$'\n'
+for f in $(ftp_files); do
+  migrate_to_s3 "${FTP_URL}/$f" "${S3_URL}/${IMDB_ID}/$f" || continue
+  delete "${FTP_URL}/$f"
+done
+unset IFS
+
+exit 0
