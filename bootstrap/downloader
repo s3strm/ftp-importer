@@ -14,7 +14,8 @@ function log() {
 }
 
 function migrate_to_s3() {
-  wget ${FTP_URL} -O - 2> /dev/null | aws s3 cp - ${S3_URL}
+  wget ${FTP_URL} -O - 2> /dev/null \
+    | aws s3 cp --storage-class REDUCED_REDUNDANCY - ${S3_URL}
   return $?
 }
 
