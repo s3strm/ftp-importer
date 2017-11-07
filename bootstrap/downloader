@@ -14,7 +14,7 @@ function log() {
 }
 
 function migrate_to_s3() {
-  wget ${FTP_URL} -O - | aws s3 cp - ${S3_URL}
+  wget ${FTP_URL} -O - &> /dev/null | aws s3 cp - ${S3_URL}
   return $?
 }
 
